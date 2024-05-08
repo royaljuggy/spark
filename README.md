@@ -11,4 +11,6 @@ Firstly, I downloaded spark into my machine. I used [this guide](https://www.vir
 Additionally, I've opted to use PySpark, and as such running `pip install pyspark` does the trick. You could also opt for Scala, which I happily used in cs451 at the University of Waterloo. But I wanted to test my Python abilities a little bit :P
 
 ### Running a program
-You may, like me, be tempted to run `python3 PYTHON_FILE.py` to start your code. Tip: don't! Instead, opt for submitting a spark job with `spark-submit PYTHON_FILE.py`
+You may, like me, be tempted to run `python3 PYTHON_FILE.py` to start your code. Tip: don't!
+
+Instead, opt for submitting a spark job with `spark-submit PYTHON_FILE.py`
