@@ -14,3 +14,6 @@ Additionally, I've opted to use PySpark, and as such running `pip install pyspar
 You may, like me, be tempted to run `python3 PYTHON_FILE.py` to start your code. Tip: don't!
 
 Instead, opt for submitting a spark job with `spark-submit PYTHON_FILE.py`
+
+### Asides
+Obviously, I've glossed over a lot of the true power of spark here... especially, well, using a distributed system. I haven't actually created a cluster, but do note that you can! HDFS is probably the first I can think of, and I think it's pretty cool. But for now, let's leverage our good ole' local file system.
