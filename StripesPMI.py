@@ -3,6 +3,7 @@ import os
 import math
 import re
 import shutil
+import sys
 from Parser import *
 
 def tokenize(text):
@@ -14,6 +15,7 @@ def main():
     # 1 = output file
     # 2 = input file
     output = get_output_dir()
+
     sc = pyspark.SparkContext('local[*]')
 
     # values
@@ -52,29 +54,63 @@ def main():
             for j in range(size):
                 if tokens[i] != tokens[j]:
                     pairsToEmit.add((tokens[i], tokens[j]))
+
         l = []
+        bgs = dict()
         for pair in pairsToEmit:
-            l.append((pair, 1))
+            l.append((pair[0], {pair[1] : 1}))
         return l
 
+    def combineMaps(tup1, tup2):
+        # tup is of type (Map(String, Int))
+        # We update tup1 in-place by adding all pairs from tup2 to tup1
+        for k, v in tup2.items():
+            if k in tup1:
+                # update
+                tup1[k] += v
+            else:
+                tup1[k] = v
+
+        return tup1
+
     def calculatePMI(tup):
-        lc = lines.value
-        count = tup[1]
-        p_of_AB = count / lc
-        p_of_A = boc.value[tup[0][0]] / lc
-        p_of_B = boc.value[tup[0][1]] / lc
-        den = p_of_A * p_of_B
-        PMI = math.log10(p_of_AB / den)
+        key_lhs = tup[0]
+        new_dict = dict()
 
-        return (tup[0], (PMI, count))
+        for key_rhs, count in tup[1].items():
+            lc = lines.value
+            p_of_AB = count / lc
+            p_of_A = boc.value[key_lhs] / lc
+            p_of_B = boc.value[key_rhs] / lc
+            den = p_of_A * p_of_B
+            PMI = math.log10(p_of_AB / den)
+            new_dict[key_rhs] = (PMI, count)
 
+        return (key_lhs, new_dict)
+        # def pmi(tup_rhs):
+        #     key_rhs = tup_rhs[0]
+        #     count = tup_rhs[1]
+        #     lc = lines.value
+        #     p_of_AB = count / lc
+        #     p_of_A = boc.value[key_lhs] / lc
+        #     p_of_B = boc.value[key_rhs] / lc
+        #     den = p_of_A * p_of_B
+        #     PMI = math.log10(p_of_AB / den)
+
+        #     return (key_rhs, (PMI, count))
+
+        # return (key_lhs, map(pmi, tup[1]))
+    
     # job two
     bigrams = txt \
         .flatMap(bigrams) \
-        .reduceByKey(lambda x,y: x + y) \
-        .filter(lambda tup: tup[1] >= threshold) \
+        .reduceByKey(combineMaps) \
+        .map(lambda tup: (tup[0], dict(filter(lambda pair: pair[1] >= threshold, tup[1].items())))) \
         .map(calculatePMI) \
-        .sortBy(lambda pair: pair[1][0], ascending=False) # sortby highest PMI
+        .filter(lambda tup: len(tup[1]) > 0) \
+        .sortBy(lambda pair: pair[0], ascending=True) # sortby key {k:v for (k,v) in tup[1].items() if v >= threshold}
+    
+    # TODO: increase efficiency. Try to use only one filter if possible. Second filter removes empty tuples
 
     # OUTPUT...
     # delete file if it already exists (spark will create file for us)

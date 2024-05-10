@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 HOWTORUN.txt
 output/*
+*output*
 
 # C extensions
 *.so
